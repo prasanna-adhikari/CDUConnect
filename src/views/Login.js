@@ -79,10 +79,12 @@ const Login = ({ navigation }) => {
         email: values.email,
         password: values.password,
       });
-
       if (response.status === 200) {
-        // Save token to AsyncStorage
-        await AsyncStorage.setItem("authToken", response.data.token);
+        // Save token and user details to AsyncStorage
+        const { token, result } = response.data;
+
+        await AsyncStorage.setItem("authToken", token);
+        await AsyncStorage.setItem("userDetails", JSON.stringify(result));
 
         // Show success message
         Toast.show({
@@ -98,6 +100,7 @@ const Login = ({ navigation }) => {
         }); // Navigate to Home and reset stack
       }
     } catch (error) {
+      console.log(error);
       Toast.show({
         type: "error",
         text1: "Login Failed",
@@ -115,88 +118,92 @@ const Login = ({ navigation }) => {
       {/* Loader */}
       <Loader visible={loading} />
 
-      {/* Curved Background */}
-      <View style={styles.curvedBackground}></View>
+      {!loading && (
+        <>
+          {/* Curved Background */}
+          <View style={styles.curvedBackground}></View>
 
-      {/* Logo Container */}
-      <View style={styles.logoContainer}>
-        <View style={styles.logoBackground}>
-          <Image
-            source={require("../assets/logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
-      </View>
-
-      <Formik
-        initialValues={{ email: "", password: "" }}
-        validationSchema={loginValidationSchema}
-        onSubmit={handleLogin}
-      >
-        {({
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          values,
-          errors,
-          touched,
-        }) => (
-          <View style={styles.formContainer}>
-            <TextInput
-              label="Email"
-              value={values.email}
-              onChangeText={handleChange("email")}
-              onBlur={handleBlur("email")}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              mode="outlined"
-              theme={{ colors: { primary: "#1b8283" } }} // Use primary color
-              error={touched.email && errors.email}
-            />
-            {touched.email && errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
-
-            <TextInput
-              label="Password"
-              value={values.password}
-              onChangeText={handleChange("password")}
-              onBlur={handleBlur("password")}
-              style={styles.input}
-              secureTextEntry
-              autoCapitalize="none"
-              mode="outlined"
-              theme={{ colors: { primary: "#1b8283" } }} // Use primary color
-              error={touched.password && errors.password}
-            />
-            {touched.password && errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
-
-            <Button
-              mode="contained"
-              onPress={handleSubmit}
-              style={styles.button}
-              contentStyle={{ paddingVertical: 8 }}
-              buttonColor="#1b8283" // Use primary color for consistency
-            >
-              Sign In
-            </Button>
-
-            <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account? </Text>
-              <Text
-                style={styles.signupLink}
-                onPress={() => navigation.navigate("Register")}
-              >
-                Sign Up
-              </Text>
+          {/* Logo Container */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoBackground}>
+              <Image
+                source={require("../assets/logo.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
           </View>
-        )}
-      </Formik>
+
+          <Formik
+            initialValues={{ email: "", password: "" }}
+            validationSchema={loginValidationSchema}
+            onSubmit={handleLogin}
+          >
+            {({
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              values,
+              errors,
+              touched,
+            }) => (
+              <View style={styles.formContainer}>
+                <TextInput
+                  label="Email"
+                  value={values.email}
+                  onChangeText={handleChange("email")}
+                  onBlur={handleBlur("email")}
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  mode="outlined"
+                  theme={{ colors: { primary: "#1b8283" } }} // Use primary color
+                  error={touched.email && errors.email}
+                />
+                {touched.email && errors.email && (
+                  <Text style={styles.errorText}>{errors.email}</Text>
+                )}
+
+                <TextInput
+                  label="Password"
+                  value={values.password}
+                  onChangeText={handleChange("password")}
+                  onBlur={handleBlur("password")}
+                  style={styles.input}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  mode="outlined"
+                  theme={{ colors: { primary: "#1b8283" } }} // Use primary color
+                  error={touched.password && errors.password}
+                />
+                {touched.password && errors.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
+
+                <Button
+                  mode="contained"
+                  onPress={handleSubmit}
+                  style={styles.button}
+                  contentStyle={{ paddingVertical: 8 }}
+                  buttonColor="#1b8283" // Use primary color for consistency
+                >
+                  Sign In
+                </Button>
+
+                <View style={styles.signupContainer}>
+                  <Text style={styles.signupText}>Don't have an account? </Text>
+                  <Text
+                    style={styles.signupLink}
+                    onPress={() => navigation.navigate("Register")}
+                  >
+                    Sign Up
+                  </Text>
+                </View>
+              </View>
+            )}
+          </Formik>
+        </>
+      )}
     </View>
   );
 };

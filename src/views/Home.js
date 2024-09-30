@@ -3,6 +3,9 @@ import { View, StyleSheet, ScrollView } from "react-native";
 import Header from "../components/Header";
 import NavigationBar from "../components/NavigationBar";
 import Post from "../components/Post";
+import CreatePost from "../components/CreatePost";
+import { Menu } from "react-native-paper";
+import CustomMenu from "./CustomMenu";
 
 const Home = () => {
   const [activePage, setActivePage] = useState("Home");
@@ -23,16 +26,28 @@ const Home = () => {
 
       {/* Posts Section */}
       {activePage === "Home" && (
-        <ScrollView style={styles.postsContainer}>
-          {[...Array(5)].map((_, index) => (
-            <Post
-              key={index}
-              userName="User Name"
-              postTime="2 hours ago"
-              postContent="This is a post content. You can see posts here."
-            />
-          ))}
-        </ScrollView>
+        <>
+          <CreatePost />
+
+          <ScrollView style={styles.postsContainer}>
+            {[...Array(5)].map((_, index) => (
+              <Post
+                key={index}
+                userName="User Name"
+                postTime="2 hours ago"
+                postContent="This is a post content. You can see posts here."
+              />
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      {/* {activePage === "Profile" && <Profile />} */}
+
+      {activePage === "Menu" && (
+        <>
+          <CustomMenu />
+        </>
       )}
     </View>
   );

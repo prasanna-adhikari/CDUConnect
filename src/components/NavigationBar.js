@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const NavigationBar = ({ activePage, onNavigate }) => {
@@ -14,13 +14,6 @@ const NavigationBar = ({ activePage, onNavigate }) => {
           size={30}
           color={activePage === "Home" ? "#1b8283" : "#0d2e3f"}
         />
-        <Text
-          style={
-            activePage === "Home" ? styles.activeText : styles.inactiveText
-          }
-        >
-          Home
-        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -34,13 +27,17 @@ const NavigationBar = ({ activePage, onNavigate }) => {
           size={30}
           color={activePage === "Friends" ? "#1b8283" : "#0d2e3f"}
         />
-        <Text
-          style={
-            activePage === "Friends" ? styles.activeText : styles.inactiveText
-          }
-        >
-          Friends
-        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => onNavigate("Clubs")}
+      >
+        <Icon
+          name={activePage === "Clubs" ? "flag" : "flag-outline"}
+          size={30}
+          color={activePage === "Clubs" ? "#1b8283" : "#0d2e3f"}
+        />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -52,15 +49,6 @@ const NavigationBar = ({ activePage, onNavigate }) => {
           size={30}
           color={activePage === "Notifications" ? "#1b8283" : "#0d2e3f"}
         />
-        <Text
-          style={
-            activePage === "Notifications"
-              ? styles.activeText
-              : styles.inactiveText
-          }
-        >
-          Notifications
-        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -68,17 +56,10 @@ const NavigationBar = ({ activePage, onNavigate }) => {
         onPress={() => onNavigate("Menu")}
       >
         <Icon
-          name="menu" // Use "menu" for both active and inactive, but change color
+          name={activePage === "Menu" ? "menu" : "menu"}
           size={30}
           color={activePage === "Menu" ? "#1b8283" : "#0d2e3f"}
         />
-        <Text
-          style={
-            activePage === "Menu" ? styles.activeText : styles.inactiveText
-          }
-        >
-          Menu
-        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -95,12 +76,6 @@ const styles = StyleSheet.create({
   },
   navItem: {
     alignItems: "center",
-  },
-  activeText: {
-    color: "#1b8283",
-  },
-  inactiveText: {
-    color: "#0d2e3f",
   },
 });
 

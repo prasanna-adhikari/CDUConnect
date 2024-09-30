@@ -5,6 +5,8 @@ import Login from "../views/Login";
 import Register from "../views/Register";
 import Home from "../views/Home"; // Import Home screen
 import { useTheme } from "react-native-paper";
+import Profile from "../views/Profile";
+import CreatePostScreen from "../views/CreatePostScreen";
 
 const Stack = createStackNavigator();
 
@@ -22,6 +24,8 @@ const AppNavigation = () => {
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Register" component={Register} />
         <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen name="Profile" component={Profile} />
+        <Stack.Screen name="CreatePostScreen" component={CreatePostScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
