@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getImageUrl } from "../api/utils";
 import apiClient from "../api/apiClient";
 import PostCard from "../components/PostCard";
+import WarningModal from "../components/WarningModal"; // Assuming you have a WarningModal component
 import { useFocusEffect } from "@react-navigation/native";
 
 const Profile = ({ navigation }) => {
@@ -24,6 +25,8 @@ const Profile = ({ navigation }) => {
   const [posts, setPosts] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalPosts, setTotalPosts] = useState(0);
+  const [warningVisible, setWarningVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState(null);
 
   // Function to fetch user details and posts
   const getUserDetails = async () => {
@@ -130,6 +133,45 @@ const Profile = ({ navigation }) => {
     }
   };
 
+  // Function to handle showing delete warning modal
+  const showDeleteWarning = (postId) => {
+    setSelectedPostId(postId);
+    setWarningVisible(true);
+  };
+
+  // Function to handle confirming deletion of a post
+  const handleDeletePost = async () => {
+    setWarningVisible(false);
+    if (selectedPostId) {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+
+        if (!token) {
+          console.error("No authentication token found.");
+          return;
+        }
+
+        const response = await apiClient.delete(
+          `/user/posts/${selectedPostId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.success) {
+          setPosts((prevPosts) =>
+            prevPosts.filter((post) => post._id !== selectedPostId)
+          );
+          setTotalPosts((prevTotal) => prevTotal - 1);
+        }
+      } catch (error) {
+        console.error("Failed to delete post:", error);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
@@ -149,7 +191,7 @@ const Profile = ({ navigation }) => {
 
       <FlatList
         data={posts}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={(item) => item._id}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -209,6 +251,7 @@ const Profile = ({ navigation }) => {
               images: item.media.map((imagePath) => getImageUrl(imagePath)),
             }}
             currentUser={{ id: user._id }}
+            onDelete={() => showDeleteWarning(item._id)}
           />
         )}
         ListEmptyComponent={() => (
@@ -235,6 +278,14 @@ const Profile = ({ navigation }) => {
             </View>
           ) : null
         }
+      />
+
+      {/* Warning Modal for Post Deletion */}
+      <WarningModal
+        visible={warningVisible}
+        onConfirm={handleDeletePost}
+        onCancel={() => setWarningVisible(false)}
+        message="Are you sure you want to delete this post?"
       />
     </SafeAreaView>
   );
