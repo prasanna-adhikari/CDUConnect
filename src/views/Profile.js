@@ -7,14 +7,19 @@ import {
   FlatList,
   SafeAreaView,
   RefreshControl,
+  TouchableOpacity,
+  StatusBar,
 } from "react-native";
 import { Button, Avatar } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getImageUrl } from "../api/utils";
 import apiClient from "../api/apiClient";
 import PostCard from "../components/PostCard";
-import WarningModal from "../components/WarningModal"; // Assuming you have a WarningModal component
+import WarningModal from "../components/WarningModal";
 import { useFocusEffect } from "@react-navigation/native";
+import Ionicons from "react-native-vector-icons/Ionicons";
+
+const PRIMARY_COLOR = "#1b8283";
 
 const Profile = ({ navigation }) => {
   const [user, setUser] = useState(null);
@@ -28,7 +33,6 @@ const Profile = ({ navigation }) => {
   const [warningVisible, setWarningVisible] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
 
-  // Function to fetch user details and posts
   const getUserDetails = async () => {
     setLoading(true);
     try {
@@ -55,7 +59,6 @@ const Profile = ({ navigation }) => {
     }
   };
 
-  // Function to fetch user posts with pagination
   const fetchUserPosts = async (userId, pageNumber = 1) => {
     if (pageNumber > 1) {
       setLoadingMore(true);
@@ -97,7 +100,6 @@ const Profile = ({ navigation }) => {
     }
   };
 
-  // Use useFocusEffect to refresh data when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       getUserDetails();
@@ -112,7 +114,6 @@ const Profile = ({ navigation }) => {
     navigation.navigate("CreatePostScreen");
   };
 
-  // Function to refresh user posts manually
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -126,23 +127,21 @@ const Profile = ({ navigation }) => {
     }
   };
 
-  // Function to handle loading more posts when scrolling
   const handleLoadMore = () => {
     if (!loadingMore && posts.length < totalPosts) {
       fetchUserPosts(user._id, page + 1);
     }
   };
 
-  // Function to handle showing delete warning modal
   const showDeleteWarning = (postId) => {
     setSelectedPostId(postId);
     setWarningVisible(true);
   };
 
-  // Function to handle confirming deletion of a post
   const handleDeletePost = async () => {
     setWarningVisible(false);
-    if (selectedPostId) {
+    const postId = selectedPostId;
+    if (postId) {
       try {
         const token = await AsyncStorage.getItem("authToken");
 
@@ -151,18 +150,15 @@ const Profile = ({ navigation }) => {
           return;
         }
 
-        const response = await apiClient.delete(
-          `/user/posts/${selectedPostId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await apiClient.delete(`/user/posts/${postId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.data.success) {
           setPosts((prevPosts) =>
-            prevPosts.filter((post) => post._id !== selectedPostId)
+            prevPosts.filter((post) => post._id !== postId)
           );
           setTotalPosts((prevTotal) => prevTotal - 1);
         }
@@ -175,17 +171,18 @@ const Profile = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#1b8283" />
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
       </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
-        <Button icon="arrow-left" onPress={() => navigation.goBack()}>
-          Back
-        </Button>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={PRIMARY_COLOR} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>{user.name}</Text>
       </View>
 
@@ -196,7 +193,7 @@ const Profile = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#1b8283"]}
+            colors={[PRIMARY_COLOR]}
           />
         }
         ListHeaderComponent={() => (
@@ -219,13 +216,12 @@ const Profile = ({ navigation }) => {
               <Text style={styles.detailText}>{totalPosts} Posts</Text>
             </View>
 
-            {/* Buttons for Edit Profile and Create Post */}
             <View style={styles.buttonsContainer}>
               <Button
                 mode="outlined"
                 style={styles.editProfileButton}
                 onPress={handleEditProfile}
-                textColor="#1b8283"
+                textColor={PRIMARY_COLOR}
               >
                 Edit Profile
               </Button>
@@ -233,7 +229,7 @@ const Profile = ({ navigation }) => {
                 mode="contained"
                 style={styles.createPostButton}
                 onPress={handleCreatePost}
-                buttonColor="#1b8283"
+                buttonColor={PRIMARY_COLOR}
               >
                 Create Post
               </Button>
@@ -243,6 +239,7 @@ const Profile = ({ navigation }) => {
         renderItem={({ item }) => (
           <PostCard
             post={{
+              postId: item._id,
               userId: user._id,
               userName: user.name,
               userProfile: getImageUrl(user.profileImage),
@@ -251,7 +248,7 @@ const Profile = ({ navigation }) => {
               images: item.media.map((imagePath) => getImageUrl(imagePath)),
             }}
             currentUser={{ id: user._id }}
-            onDelete={() => showDeleteWarning(item._id)}
+            onDelete={(postId) => showDeleteWarning(item._id)}
           />
         )}
         ListEmptyComponent={() => (
@@ -274,13 +271,12 @@ const Profile = ({ navigation }) => {
         ListFooterComponent={
           loadingMore ? (
             <View style={styles.loaderContainer}>
-              <ActivityIndicator size="small" color="#1b8283" />
+              <ActivityIndicator size="small" color={PRIMARY_COLOR} />
             </View>
           ) : null
         }
       />
 
-      {/* Warning Modal for Post Deletion */}
       <WarningModal
         visible={warningVisible}
         onConfirm={handleDeletePost}
@@ -299,22 +295,25 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
-    paddingTop: 35,
+    padding: 15,
     backgroundColor: "#ffffff",
     elevation: 3,
+    justifyContent: "space-between",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
+    color: PRIMARY_COLOR,
     marginLeft: 10,
+    flex: 1,
+    textAlign: "center",
   },
   profileSection: {
     alignItems: "center",
     marginVertical: 20,
   },
   avatar: {
-    backgroundColor: "#1b8283",
+    backgroundColor: PRIMARY_COLOR,
   },
   userName: {
     fontSize: 24,
@@ -342,7 +341,7 @@ const styles = StyleSheet.create({
   editProfileButton: {
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: "#1b8283",
+    borderColor: PRIMARY_COLOR,
     marginHorizontal: 10,
   },
   createPostButton: {

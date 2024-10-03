@@ -12,10 +12,11 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Portal } from "react-native-paper";
 import PostMenu from "./PostMenu";
+import { getTimeAgo } from "../utils/formatTimeAgo";
 
 const { width } = Dimensions.get("window");
 
-const PostCard = ({ post, currentUser }) => {
+const PostCard = ({ post, currentUser, onDelete }) => {
   const [visible, setVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
@@ -129,10 +130,7 @@ const PostCard = ({ post, currentUser }) => {
       );
     } else {
       return (
-        <Text
-          style={styles.postContent}
-          numberOfLines={2} // Limit to 3 lines to make sure long text with line breaks is truncated properly
-        >
+        <Text style={styles.postContent} numberOfLines={2}>
           {content.length > contentLength ? (
             <>
               {content.slice(0, contentLength)}{" "}
@@ -148,6 +146,7 @@ const PostCard = ({ post, currentUser }) => {
     }
   };
 
+  const postTime = getTimeAgo(post.postTime);
   return (
     <View>
       {/* Modal for Viewing Images */}
@@ -172,14 +171,14 @@ const PostCard = ({ post, currentUser }) => {
           <Avatar.Image size={40} source={{ uri: post.userProfile }} />
           <View style={styles.userInfoText}>
             <Text style={styles.userName}>{post.userName}</Text>
-            <Text style={styles.postTime}>{post.postTime}</Text>
+            <Text style={styles.postTime}>{getTimeAgo(post.postTime)}</Text>
           </View>
         </View>
 
         <PostMenu
           isUserPost={post.userId === currentUser?.id}
           onEdit={() => console.log("Edit post")}
-          onDelete={() => console.log("Delete post")}
+          onDelete={() => onDelete(post.postId)} // Use onDelete prop to delete post
         />
 
         {/* Post Content */}
@@ -293,7 +292,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 10,
   },
-
   overlayText: {
     color: "#fff",
     fontSize: 24,

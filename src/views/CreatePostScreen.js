@@ -10,13 +10,15 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  StatusBar,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
-import Toast from "react-native-root-toast"; // Add this library for toasts
+import Toast from "react-native-root-toast";
 import axios from "axios";
 import apiClient from "../api/apiClient";
 import { getImageUrl } from "../api/utils";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 const { width } = Dimensions.get("window");
 const PRIMARY_COLOR = "#1b8283";
@@ -70,11 +72,9 @@ const CreatePostScreen = ({ navigation }) => {
         let localUri = item.uri;
         let filename = localUri.split("/").pop();
 
-        // Infer the type of the file (e.g., image/jpeg, video/mp4)
         let match = /\.(\w+)$/.exec(filename);
         let type = match ? `image/${match[1]}` : "image";
 
-        // Append the file with appropriate fields
         formData.append("media", {
           uri: localUri,
           name: filename,
@@ -82,7 +82,6 @@ const CreatePostScreen = ({ navigation }) => {
         });
       });
 
-      // Post the form data to the backend
       const response = await apiClient.post(
         `/user/${user._id}/posts`,
         formData,
@@ -123,10 +122,11 @@ const CreatePostScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.headerText, styles.backText]}>Back</Text>
+          <Ionicons name="arrow-back" size={24} color={PRIMARY_COLOR} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Post</Text>
         <TouchableOpacity onPress={handleSubmitPost}>
@@ -190,7 +190,7 @@ const CreatePostScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#f8f9fa",
   },

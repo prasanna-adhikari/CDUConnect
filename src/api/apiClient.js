@@ -1,17 +1,18 @@
 import axios from "axios";
+import Config from "react-native-config";
+const url = "192.168.86.68";
+const test = Config.API_BASE_URL;
+console.log(test);
 
-// const ipaddress =
 const apiClient = axios.create({
-  baseURL: "http://192.168.0.22:7000/api", // Replace with backend API URL
-  // baseURL: "http://192.168.86.59:7000/api", // Replace with backend API URL
+  baseURL: `http://${url}:7000/api`,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
 const apiClientFormData = axios.create({
-  baseURL: "http://192.168.0.22:7000/api", // Replace with backend API URL
-  // baseURL: "http://192.168.86.59:7000/api", // Replace with backend API URL
+  baseURL: `http://${url}:7000/api`,
   headers: {
     "Content-Type": "multipart/form-data",
   },
