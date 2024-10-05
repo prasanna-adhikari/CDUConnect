@@ -228,7 +228,7 @@ const FriendsScreen = () => {
       >
         {/* Friend Requests Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Friend Requests</Text>
+          <Text style={styles.sectionTitle}>Connection Requests</Text>
           {incomingRequests.length > 0 ? (
             incomingRequests.map((request) =>
               request?.requester ? (
@@ -246,6 +246,7 @@ const FriendsScreen = () => {
                     <Text style={styles.userName}>
                       {request.requester.name || "Unknown"}
                     </Text>
+                    <Text>{request.requester.email || "Unknown"}</Text>
                     <View style={styles.buttonGroup}>
                       <Button
                         mode="contained"
@@ -268,13 +269,13 @@ const FriendsScreen = () => {
               ) : null
             )
           ) : (
-            <Text style={styles.noRequestsText}>No friend requests</Text>
+            <Text style={styles.noRequestsText}>No connection requests</Text>
           )}
         </View>
 
-        {/* Outgoing Friend Requests Section */}
+        {/* Outgoing Connection Requests Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Outgoing Friend Requests</Text>
+          <Text style={styles.sectionTitle}>Outgoing Connection Requests</Text>
           {outgoingRequests.length > 0 ? (
             outgoingRequests.map((request) =>
               request?.recipient ? (
@@ -292,6 +293,8 @@ const FriendsScreen = () => {
                     <Text style={styles.userName}>
                       {request.recipient.name || "Unknown"}
                     </Text>
+                    <Text>{request.recipient.email || "Unknown"}</Text>
+
                     <View style={styles.buttonGroup}>
                       <Text style={styles.pendingText}>Pending</Text>
                       <Button
@@ -331,12 +334,14 @@ const FriendsScreen = () => {
                 />
                 <View style={styles.userInfo}>
                   <Text style={styles.userName}>{user.name || "Unknown"}</Text>
+                  <Text>{user.email || "Unknown"}</Text>
+
                   <Button
                     mode="contained"
                     onPress={() => handleSendFriendRequest(user._id)}
                     style={styles.addButton}
                   >
-                    Add Friend
+                    Connect
                   </Button>
                 </View>
               </View>

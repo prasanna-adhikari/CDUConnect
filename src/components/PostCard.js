@@ -166,17 +166,24 @@ const PostCard = ({ post, currentUser, onDelete }) => {
       </Portal>
 
       <View style={styles.cardContainer}>
-        {/* User Information */}
+        {/* Author Information */}
         <View style={styles.userInfo}>
-          <Avatar.Image size={40} source={{ uri: post.userProfile }} />
+          {post.authorProfile ? (
+            <Avatar.Image size={40} source={{ uri: post.authorProfile }} />
+          ) : (
+            <Avatar.Text
+              size={40}
+              label={post.authorName.slice(0, 2).toUpperCase()}
+            />
+          )}
           <View style={styles.userInfoText}>
-            <Text style={styles.userName}>{post.userName}</Text>
-            <Text style={styles.postTime}>{getTimeAgo(post.postTime)}</Text>
+            <Text style={styles.userName}>{post.authorName}</Text>
+            <Text style={styles.postTime}>{postTime}</Text>
           </View>
         </View>
 
         <PostMenu
-          isUserPost={post.userId === currentUser?.id}
+          isUserPost={post.isUser && post.authorId === currentUser?.id}
           onEdit={() => console.log("Edit post")}
           onDelete={() => onDelete(post.postId)} // Use onDelete prop to delete post
         />

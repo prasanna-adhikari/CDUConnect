@@ -7,6 +7,12 @@ import Home from "../views/Home"; // Import Home screen
 import { useTheme } from "react-native-paper";
 import Profile from "../views/Profile";
 import CreatePostScreen from "../views/CreatePostScreen";
+import ChangePasswordScreen from "../views/ChangePasswordScreen";
+import SearchScreen from "../views/SearchScreen";
+import UserProfile from "../views/UserProfile";
+import ClubDetail from "../views/ClubDetail";
+import PostDetail from "../views/PostDetail";
+import ClubProfile from "../views/ClubProfile";
 
 const Stack = createStackNavigator();
 
@@ -26,6 +32,16 @@ const AppNavigation = () => {
         <Stack.Screen name="Home" component={Home} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="CreatePostScreen" component={CreatePostScreen} />
+        <Stack.Screen name="SearchScreen" component={SearchScreen} />
+        <Stack.Screen name="UserProfile" component={UserProfile} />
+        <Stack.Screen name="ClubProfile" component={ClubProfile} />
+        <Stack.Screen name="ClubDetail" component={ClubDetail} />
+        <Stack.Screen name="PostDetail" component={PostDetail} />
+
+        <Stack.Screen
+          name="ChangePasswordScreen"
+          component={ChangePasswordScreen}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

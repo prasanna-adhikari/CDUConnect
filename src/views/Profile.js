@@ -18,6 +18,8 @@ import PostCard from "../components/PostCard";
 import WarningModal from "../components/WarningModal";
 import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import * as ImagePicker from "expo-image-picker";
 
 const PRIMARY_COLOR = "#1b8283";
 
@@ -100,6 +102,49 @@ const Profile = ({ navigation }) => {
     }
   };
 
+  const handleEditAvatar = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        const localUri = result.assets[0].uri;
+        const filename = localUri.split("/").pop();
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : `image`;
+
+        const formData = new FormData();
+        formData.append("profileImage", {
+          uri: localUri,
+          name: filename,
+          type,
+        });
+
+        const token = await AsyncStorage.getItem("authToken");
+        const response = await apiClient.put("/user/profile/image", formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        if (response.data.success) {
+          const updatedUser = response.data.result.user;
+          await AsyncStorage.setItem(
+            "userDetails",
+            JSON.stringify(updatedUser)
+          );
+          setUser(updatedUser);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update profile image:", error);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       getUserDetails();
@@ -107,7 +152,7 @@ const Profile = ({ navigation }) => {
   );
 
   const handleEditProfile = () => {
-    navigation.navigate("EditProfile");
+    navigation.navigate("ChangePasswordScreen");
   };
 
   const handleCreatePost = () => {
@@ -198,15 +243,28 @@ const Profile = ({ navigation }) => {
         }
         ListHeaderComponent={() => (
           <View style={styles.profileSection}>
-            {user.profileImage ? (
+            <View style={styles.avatarContainer}>
               <Avatar.Image
-                size={100}
-                source={{ uri: getImageUrl(user.profileImage) }}
+                size={130}
+                source={
+                  user.profileImage
+                    ? { uri: getImageUrl(user.profileImage) }
+                    : null
+                }
                 style={styles.avatar}
               />
-            ) : (
-              <Avatar.Text size={100} label={initials} style={styles.avatar} />
-            )}
+              <TouchableOpacity
+                onPress={handleEditAvatar}
+                style={styles.editIconContainer}
+              >
+                <MaterialIcons
+                  name="camera-alt"
+                  size={24}
+                  color="#fff"
+                  style={styles.editIcon}
+                />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.userName}>{user.name}</Text>
             <Text style={styles.userEmail}>{user.email}</Text>
             <View style={styles.detailsContainer}>
@@ -240,15 +298,16 @@ const Profile = ({ navigation }) => {
           <PostCard
             post={{
               postId: item._id,
-              userId: user._id,
-              userName: user.name,
-              userProfile: getImageUrl(user.profileImage),
+              authorId: user._id,
+              authorName: user.name,
+              authorProfile: getImageUrl(user.profileImage),
               postTime: item.createdAt,
               content: item.content,
               images: item.media.map((imagePath) => getImageUrl(imagePath)),
+              isUser: true,
             }}
             currentUser={{ id: user._id }}
-            onDelete={(postId) => showDeleteWarning(item._id)}
+            onDelete={() => showDeleteWarning(item._id)}
           />
         )}
         ListEmptyComponent={() => (
@@ -312,8 +371,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 20,
   },
+  avatarContainer: {
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   avatar: {
     backgroundColor: PRIMARY_COLOR,
+  },
+  editIconContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: PRIMARY_COLOR,
+    borderRadius: 20,
+    padding: 4,
+    borderColor: "#fff",
+    borderWidth: 1.5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editIcon: {
+    alignSelf: "center",
   },
   userName: {
     fontSize: 24,

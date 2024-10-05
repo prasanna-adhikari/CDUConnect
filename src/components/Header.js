@@ -2,8 +2,11 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Appbar, Avatar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useNavigation } from "@react-navigation/native";
 
 const Header = () => {
+  const navigation = useNavigation();
+
   return (
     <Appbar.Header style={styles.header}>
       <Avatar.Image
@@ -12,7 +15,13 @@ const Header = () => {
         style={styles.logo}
       />
       <View style={styles.headerIcons}>
-        <Icon name="magnify" size={26} color="#0d2e3f" style={styles.icon} />
+        <Icon
+          name="magnify"
+          size={26}
+          color="#0d2e3f"
+          style={styles.icon}
+          onPress={() => navigation.navigate("SearchScreen")}
+        />
         <Icon name="chat" size={26} color="#0d2e3f" style={styles.icon} />
       </View>
     </Appbar.Header>

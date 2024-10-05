@@ -67,6 +67,8 @@ const ClubList = () => {
       );
 
       if (response.data.success) {
+        const updatedUser = response.data.user;
+        await AsyncStorage.setItem("userDetails", JSON.stringify(updatedUser));
         fetchClubsData();
       }
     } catch (error) {
@@ -88,6 +90,8 @@ const ClubList = () => {
       );
 
       if (response.data.success) {
+        const updatedUser = response.data.user;
+        await AsyncStorage.setItem("userDetails", JSON.stringify(updatedUser));
         fetchClubsData();
       }
     } catch (error) {

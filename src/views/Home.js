@@ -17,8 +17,10 @@ import { getImageUrl } from "../api/utils";
 import FriendsScreen from "../components/FriendsScreen";
 import CustomMenu from "./CustomMenu";
 import ClubList from "../components/ClubList";
+import NotificationsScreen from "../components/NotificationScreen";
 
 const PRIMARY_COLOR = "#1b8283";
+
 const Home = () => {
   const [activePage, setActivePage] = useState("Home");
   const [posts, setPosts] = useState([]);
@@ -122,27 +124,36 @@ const Home = () => {
                     colors={[PRIMARY_COLOR]}
                   />
                 }
-                renderItem={({ item }) => (
-                  <>
+                renderItem={({ item }) => {
+                  // Determine whether the post is from a user or a club
+                  const author = item.userId || item.clubId || {};
+                  const isUser = !!item.userId;
+
+                  return (
                     <PostCard
                       post={{
-                        userId: item.userId._id, // Assuming userId is an object containing the user's _id
-                        userName:
-                          item.userId.name ||
-                          `${item.userId.firstName} ${item.userId.lastName}`, // Assuming userId contains the user's name or first and last names
-                        userProfile: item.userId.profileImage
-                          ? getImageUrl(item.userId.profileImage)
-                          : null, // Assuming userId contains a profileImage
+                        authorId: author._id || "",
+                        authorName:
+                          author.name ||
+                          `${author.firstName || ""} ${
+                            author.lastName || ""
+                          }`.trim(),
+                        authorProfile: author.profileImage
+                          ? getImageUrl(author.profileImage)
+                          : null,
                         postTime: item.createdAt,
                         content: item.content,
-                        images: item.media.map((mediaItem) =>
-                          getImageUrl(mediaItem)
-                        ),
+                        images: item.media
+                          ? item.media.map((mediaItem) =>
+                              getImageUrl(mediaItem)
+                            )
+                          : [],
+                        isUser, // Add an indication if the author is a user or club
                       }}
-                      currentUser={{ id: item.userId._id }}
+                      currentUser={{ id: author._id || "" }}
                     />
-                  </>
-                )}
+                  );
+                }}
                 contentContainerStyle={{ paddingBottom: 30 }}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
@@ -159,22 +170,11 @@ const Home = () => {
         </>
       )}
 
-      {/* {activePage === "Profile" && <Profile />} */}
-      {activePage === "Friends" && (
-        <>
-          <FriendsScreen />
-        </>
-      )}
-      {activePage === "Clubs" && (
-        <>
-          <ClubList />
-        </>
-      )}
-      {activePage === "Menu" && (
-        <>
-          <CustomMenu />
-        </>
-      )}
+      {/* Other pages */}
+      {activePage === "Friends" && <FriendsScreen />}
+      {activePage === "Clubs" && <ClubList />}
+      {activePage === "Notifications" && <NotificationsScreen />}
+      {activePage === "Menu" && <CustomMenu />}
     </View>
   );
 };
@@ -186,6 +186,11 @@ const styles = StyleSheet.create({
   },
   postsContainer: {
     paddingHorizontal: 10,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
