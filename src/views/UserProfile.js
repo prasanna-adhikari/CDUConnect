@@ -6,10 +6,9 @@ import {
   ActivityIndicator,
   ScrollView,
   SafeAreaView,
-  FlatList,
-  TouchableOpacity,
   RefreshControl,
   StatusBar,
+  TouchableOpacity,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiClient from "../api/apiClient";
@@ -52,9 +51,8 @@ const UserProfile = ({ route, navigation }) => {
       if (response.data.success) {
         const fetchedUser = response.data.result;
         setUser(fetchedUser);
-        setPosts(fetchedUser.posts || []); // Ensure `posts` is an array
+        setPosts(fetchedUser.posts || []);
 
-        // Determine relationship status based on friend requests
         const currentUserDetail = await AsyncStorage.getItem("userDetails");
         const parsedUser = JSON.parse(currentUserDetail);
         const currentUserId = parsedUser._id;
@@ -65,7 +63,6 @@ const UserProfile = ({ route, navigation }) => {
         ) {
           setRelationshipStatus("friend");
         } else {
-          // Fetch friend requests to determine if there's a pending request
           const friendRequestsResponse = await apiClient.get(
             `/friend-requests`,
             {
@@ -97,119 +94,63 @@ const UserProfile = ({ route, navigation }) => {
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await fetchUserDetails();
-    } catch (error) {
-      console.error("Failed to refresh posts:", error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const handleSendFriendRequest = async () => {
+  const handleAction = async (action) => {
     try {
       const token = await AsyncStorage.getItem("authToken");
-      const response = await apiClient.post(
-        `/friend-request/${userId}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      let response;
 
-      if (response.data.success) {
-        setRelationshipStatus("request_sent");
+      switch (action) {
+        case "send":
+          response = await apiClient.post(
+            `/friend-request/${userId}`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (response.data.success) setRelationshipStatus("request_sent");
+          break;
+        case "accept":
+          response = await apiClient.post(
+            `/friend-request/${userId}/accept`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (response.data.success) setRelationshipStatus("friend");
+          break;
+        case "reject":
+          response = await apiClient.post(
+            `/friend-request/${userId}/reject`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (response.data.success) setRelationshipStatus("not_friend");
+          break;
+        case "cancel":
+          response = await apiClient.delete(
+            `/friend-request/cancel/${userId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (response.data.success) setRelationshipStatus("not_friend");
+          break;
+        case "remove":
+          response = await apiClient.delete(`/friend/${userId}/remove`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.data.success) setRelationshipStatus("not_friend");
+          break;
+        default:
+          console.error("Invalid action");
       }
     } catch (error) {
-      console.error("Failed to send friend request:", error);
+      console.error(`Failed to ${action} friend request:`, error);
     }
-  };
-
-  const handleAcceptFriendRequest = async () => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-      const response = await apiClient.post(
-        `/friend-request/${userId}/accept`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setRelationshipStatus("friend");
-      }
-    } catch (error) {
-      console.error("Failed to accept friend request:", error);
-    }
-  };
-
-  const handleRejectFriendRequest = async () => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-      const response = await apiClient.post(
-        `/friend-request/${userId}/reject`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setRelationshipStatus("not_friend");
-      }
-    } catch (error) {
-      console.error("Failed to reject friend request:", error);
-    }
-  };
-
-  const handleCancelFriendRequest = async () => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-      const response = await apiClient.delete(
-        `/friend-request/cancel/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setRelationshipStatus("not_friend");
-      }
-    } catch (error) {
-      console.error("Failed to cancel friend request:", error);
-    }
-  };
-
-  const handleRemoveFriend = async () => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-      const response = await apiClient.delete(`/friend/${userId}/remove`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.data.success) {
-        setRelationshipStatus("not_friend");
-      }
-    } catch (error) {
-      console.error("Failed to remove friend:", error);
-    }
-  };
-
-  const handleMessage = () => {
-    navigation.navigate("ChatScreen", { userId });
   };
 
   if (loading) {
@@ -227,7 +168,10 @@ const UserProfile = ({ route, navigation }) => {
       </View>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchUserDetails}
+          />
         }
       >
         {user ? (
@@ -235,15 +179,14 @@ const UserProfile = ({ route, navigation }) => {
             <UserProfileCard
               user={user}
               relationshipStatus={relationshipStatus}
-              onSendFriendRequest={handleSendFriendRequest}
-              onAcceptFriendRequest={handleAcceptFriendRequest}
-              onRejectFriendRequest={handleRejectFriendRequest}
-              onCancelFriendRequest={handleCancelFriendRequest}
-              onRemoveFriend={handleRemoveFriend}
-              onMessage={handleMessage}
+              onSendFriendRequest={() => handleAction("send")}
+              onAcceptFriendRequest={() => handleAction("accept")}
+              onRejectFriendRequest={() => handleAction("reject")}
+              onCancelFriendRequest={() => handleAction("cancel")}
+              onRemoveFriend={() => handleAction("remove")}
+              onMessage={() => navigation.navigate("ChatScreen", { userId })}
             />
 
-            {/* Render User Posts */}
             <View style={{ marginTop: 20 }}>
               {posts && posts.length > 0 ? (
                 posts.map((post) => (

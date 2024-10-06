@@ -6,9 +6,11 @@ import {
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { Avatar, Button } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native"; // Import useNavigation
 import apiClient from "../api/apiClient";
 import { getImageUrl } from "../api/utils";
 import { RefreshControl } from "react-native-gesture-handler";
@@ -22,6 +24,9 @@ const FriendsScreen = () => {
   const [availableUsers, setAvailableUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const navigation = useNavigation(); // Set up navigation
+
   useEffect(() => {
     fetchFriendsData();
   }, []);
@@ -232,40 +237,49 @@ const FriendsScreen = () => {
           {incomingRequests.length > 0 ? (
             incomingRequests.map((request) =>
               request?.requester ? (
-                <View key={request._id} style={styles.friendContainer}>
-                  <Avatar.Image
-                    size={50}
-                    source={{
-                      uri: request.requester.profileImage
-                        ? getImageUrl(request.requester.profileImage)
-                        : "https://via.placeholder.com/150",
-                    }}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.userInfo}>
-                    <Text style={styles.userName}>
-                      {request.requester.name || "Unknown"}
-                    </Text>
-                    <Text>{request.requester.email || "Unknown"}</Text>
-                    <View style={styles.buttonGroup}>
-                      <Button
-                        mode="contained"
-                        onPress={() => handleAcceptRequest(request._id)}
-                        style={styles.acceptButton}
-                      >
-                        Accept
-                      </Button>
-                      <Button
-                        mode="outlined"
-                        onPress={() => handleRejectRequest(request._id)}
-                        style={styles.rejectButton}
-                        textColor={PRIMARY_COLOR}
-                      >
-                        Reject
-                      </Button>
+                <TouchableOpacity
+                  key={request._id}
+                  onPress={() =>
+                    navigation.navigate("UserProfile", {
+                      userId: request.requester._id,
+                    })
+                  } // Navigate to UserProfile with userId
+                >
+                  <View style={styles.friendContainer}>
+                    <Avatar.Image
+                      size={50}
+                      source={{
+                        uri: request.requester.profileImage
+                          ? getImageUrl(request.requester.profileImage)
+                          : "https://via.placeholder.com/150",
+                      }}
+                      style={styles.avatar}
+                    />
+                    <View style={styles.userInfo}>
+                      <Text style={styles.userName}>
+                        {request.requester.name || "Unknown"}
+                      </Text>
+                      <Text>{request.requester.email || "Unknown"}</Text>
+                      <View style={styles.buttonGroup}>
+                        <Button
+                          mode="contained"
+                          onPress={() => handleAcceptRequest(request._id)}
+                          style={styles.acceptButton}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          mode="outlined"
+                          onPress={() => handleRejectRequest(request._id)}
+                          style={styles.rejectButton}
+                          textColor={PRIMARY_COLOR}
+                        >
+                          Reject
+                        </Button>
+                      </View>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               ) : null
             )
           ) : (
@@ -279,37 +293,46 @@ const FriendsScreen = () => {
           {outgoingRequests.length > 0 ? (
             outgoingRequests.map((request) =>
               request?.recipient ? (
-                <View key={request._id} style={styles.friendContainer}>
-                  <Avatar.Image
-                    size={50}
-                    source={{
-                      uri: request.recipient.profileImage
-                        ? getImageUrl(request.recipient.profileImage)
-                        : "https://via.placeholder.com/150",
-                    }}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.userInfo}>
-                    <Text style={styles.userName}>
-                      {request.recipient.name || "Unknown"}
-                    </Text>
-                    <Text>{request.recipient.email || "Unknown"}</Text>
+                <TouchableOpacity
+                  key={request._id}
+                  onPress={() =>
+                    navigation.navigate("UserProfile", {
+                      userId: request.recipient._id,
+                    })
+                  } // Navigate to UserProfile with userId
+                >
+                  <View style={styles.friendContainer}>
+                    <Avatar.Image
+                      size={50}
+                      source={{
+                        uri: request.recipient.profileImage
+                          ? getImageUrl(request.recipient.profileImage)
+                          : "https://via.placeholder.com/150",
+                      }}
+                      style={styles.avatar}
+                    />
+                    <View style={styles.userInfo}>
+                      <Text style={styles.userName}>
+                        {request.recipient.name || "Unknown"}
+                      </Text>
+                      <Text>{request.recipient.email || "Unknown"}</Text>
 
-                    <View style={styles.buttonGroup}>
-                      <Text style={styles.pendingText}>Pending</Text>
-                      <Button
-                        mode="outlined"
-                        onPress={() =>
-                          handleCancelRequest(request.recipient._id)
-                        }
-                        style={styles.cancelButton}
-                        textColor={PRIMARY_COLOR}
-                      >
-                        Cancel
-                      </Button>
+                      <View style={styles.buttonGroup}>
+                        <Text style={styles.pendingText}>Pending</Text>
+                        <Button
+                          mode="outlined"
+                          onPress={() =>
+                            handleCancelRequest(request.recipient._id)
+                          }
+                          style={styles.cancelButton}
+                          textColor={PRIMARY_COLOR}
+                        >
+                          Cancel
+                        </Button>
+                      </View>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               ) : null
             )
           ) : (
@@ -322,29 +345,38 @@ const FriendsScreen = () => {
           <Text style={styles.sectionTitle}>Available Users</Text>
           {availableUsers.length > 0 ? (
             availableUsers.map((user) => (
-              <View key={user._id} style={styles.friendContainer}>
-                <Avatar.Image
-                  size={60}
-                  source={{
-                    uri: user.profileImage
-                      ? getImageUrl(user.profileImage)
-                      : "https://via.placeholder.com/150",
-                  }}
-                  style={styles.avatar}
-                />
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{user.name || "Unknown"}</Text>
-                  <Text>{user.email || "Unknown"}</Text>
+              <TouchableOpacity
+                key={user._id}
+                onPress={() =>
+                  navigation.navigate("UserProfile", { userId: user._id })
+                } // Navigate to UserProfile with userId
+              >
+                <View style={styles.friendContainer}>
+                  <Avatar.Image
+                    size={60}
+                    source={{
+                      uri: user.profileImage
+                        ? getImageUrl(user.profileImage)
+                        : "https://via.placeholder.com/150",
+                    }}
+                    style={styles.avatar}
+                  />
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>
+                      {user.name || "Unknown"}
+                    </Text>
+                    <Text>{user.email || "Unknown"}</Text>
 
-                  <Button
-                    mode="contained"
-                    onPress={() => handleSendFriendRequest(user._id)}
-                    style={styles.addButton}
-                  >
-                    Connect
-                  </Button>
+                    <Button
+                      mode="contained"
+                      onPress={() => handleSendFriendRequest(user._id)}
+                      style={styles.addButton}
+                    >
+                      Connect
+                    </Button>
+                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           ) : (
             <Text style={styles.noRequestsText}>No users found</Text>

@@ -1,4 +1,3 @@
-// ClubList.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -11,6 +10,7 @@ import {
   Image,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native"; // Import useNavigation
 import apiClient from "../api/apiClient";
 import { getImageUrl } from "../api/utils";
 
@@ -22,6 +22,7 @@ const ClubList = () => {
   const [unfollowedClubs, setUnfollowedClubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation(); // Set up navigation
 
   useEffect(() => {
     fetchClubsData();
@@ -111,37 +112,43 @@ const ClubList = () => {
   };
 
   const renderClubItem = (club, isFollowed) => (
-    <View style={styles.clubCard}>
-      <View style={styles.clubInfo}>
-        <Image
-          source={{
-            uri: club.clubImage
-              ? getImageUrl(club.clubImage)
-              : "https://via.placeholder.com/150",
-          }}
-          style={styles.clubImage}
-        />
-        <View style={styles.clubDetails}>
-          <Text style={styles.clubName}>{club.name}</Text>
-          <Text style={styles.clubDescription} numberOfLines={2}>
-            {club.description || "No description available."}
-          </Text>
+    <TouchableOpacity
+      onPress={() => navigation.navigate("ClubProfile", { clubId: club._id })} // Navigate to ClubProfile with clubId
+    >
+      <View style={styles.clubCard}>
+        <View style={styles.clubInfo}>
+          <Image
+            source={{
+              uri: club.clubImage
+                ? getImageUrl(club.clubImage)
+                : "https://via.placeholder.com/150",
+            }}
+            style={styles.clubImage}
+          />
+          <View style={styles.clubDetails}>
+            <Text style={styles.clubName}>{club.name}</Text>
+            <Text style={styles.clubDescription} numberOfLines={2}>
+              {club.description || "No description available."}
+            </Text>
+          </View>
         </View>
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            { backgroundColor: isFollowed ? "#ff4d4f" : PRIMARY_COLOR },
+          ]}
+          onPress={() =>
+            isFollowed
+              ? handleUnfollowClub(club._id)
+              : handleFollowClub(club._id)
+          }
+        >
+          <Text style={styles.buttonText}>
+            {isFollowed ? "Unfollow" : "Follow"}
+          </Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={[
-          styles.actionButton,
-          { backgroundColor: isFollowed ? "#ff4d4f" : PRIMARY_COLOR },
-        ]}
-        onPress={() =>
-          isFollowed ? handleUnfollowClub(club._id) : handleFollowClub(club._id)
-        }
-      >
-        <Text style={styles.buttonText}>
-          {isFollowed ? "Unfollow" : "Follow"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
