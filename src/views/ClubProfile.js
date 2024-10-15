@@ -27,6 +27,7 @@ const ClubProfile = ({ route, navigation }) => {
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     fetchClubDetails();
@@ -56,6 +57,7 @@ const ClubProfile = ({ route, navigation }) => {
         // Check if the user is following the club
         const currentUserDetail = await AsyncStorage.getItem("userDetails");
         const parsedUser = JSON.parse(currentUserDetail);
+        setCurrentUser(parsedUser);
         const isUserFollowing = parsedUser.followingClubs.some(
           (club) => club._id === clubId
         );
@@ -169,8 +171,10 @@ const ClubProfile = ({ route, navigation }) => {
                         getImageUrl(imagePath)
                       ),
                       isUser: false,
+                      isEvent: post.isEvent, // Pass isEvent to PostCard
+                      eventDetails: post.eventDetails, // Pass eventDetails to PostCard
                     }}
-                    currentUser={null}
+                    currentUser={currentUser}
                   />
                 ))
               ) : (

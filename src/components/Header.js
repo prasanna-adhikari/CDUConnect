@@ -22,7 +22,13 @@ const Header = () => {
           style={styles.icon}
           onPress={() => navigation.navigate("SearchScreen")}
         />
-        <Icon name="chat" size={26} color="#0d2e3f" style={styles.icon} />
+        <Icon
+          name="chat"
+          size={26}
+          color="#0d2e3f"
+          style={styles.icon}
+          onPress={() => navigation.navigate("FriendListScreen")}
+        />
       </View>
     </Appbar.Header>
   );

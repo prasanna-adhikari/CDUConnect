@@ -141,10 +141,9 @@ const FriendsScreen = () => {
       );
 
       if (response.data.success) {
-        // Find the user in the availableUsers list to get their profile image
+        // Find the user in the availableUsers list to get their profile image and email
         const user = availableUsers.find((u) => u._id === recipientId);
 
-        // Add to outgoing requests
         setOutgoingRequests((prev) => [
           ...prev,
           {
@@ -152,6 +151,7 @@ const FriendsScreen = () => {
               _id: recipientId,
               name: user?.name,
               profileImage: user?.profileImage,
+              email: user?.email, // Add the email to avoid "Unknown"
             },
             status: "pending",
           },

@@ -184,7 +184,13 @@ const UserProfile = ({ route, navigation }) => {
               onRejectFriendRequest={() => handleAction("reject")}
               onCancelFriendRequest={() => handleAction("cancel")}
               onRemoveFriend={() => handleAction("remove")}
-              onMessage={() => navigation.navigate("ChatScreen", { userId })}
+              onMessage={() =>
+                navigation.navigate("ChatScreen", {
+                  userId: user._id, // You can pass the userId to the chat screen
+                  friendId: user._id,
+                  friendName: user.name,
+                })
+              }
             />
 
             <View style={{ marginTop: 20 }}>

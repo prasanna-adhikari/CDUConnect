@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import ImageViewer from "react-native-image-zoom-viewer";
 import { Portal } from "react-native-paper";
 import PostMenu from "./PostMenu";
 import { getTimeAgo } from "../utils/formatTimeAgo";
+import apiClient from "../api/apiClient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 
@@ -20,6 +22,26 @@ const PostCard = ({ post, currentUser, onDelete }) => {
   const [visible, setVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [isInterested, setIsInterested] = useState(false);
+  const [isGoing, setIsGoing] = useState(false);
+
+  useEffect(() => {
+    if (post.eventDetails && currentUser) {
+      // Convert IDs to strings to ensure type consistency
+      const interestedIds = post.eventDetails.interested?.map(String);
+      const currentUserId = String(currentUser?._id);
+
+      // Use the correct comparison with .some() and ensure consistent types
+      const isUserInterested = interestedIds?.some(
+        (id) => id === currentUserId
+      );
+
+      setIsInterested(isUserInterested);
+      setIsGoing(
+        post.eventDetails.going?.map(String)?.some((id) => id === currentUserId)
+      );
+    }
+  }, [post.eventDetails, currentUser]);
 
   const onImagePress = (images, index) => {
     setCurrentIndex(index);
@@ -28,6 +50,96 @@ const PostCard = ({ post, currentUser, onDelete }) => {
 
   const onClose = () => {
     setVisible(false);
+  };
+
+  const handleInterested = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        console.error("No authentication token found.");
+        return;
+      }
+      console.log(post);
+      console.log("postid: ", post.postId);
+      const response = await apiClient.post(
+        `/posts/${post.postId}/event/interested`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setIsInterested(true);
+      }
+    } catch (error) {
+      console.error("Failed to mark interest:", error);
+    }
+  };
+
+  const handleGoing = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        console.error("No authentication token found.");
+        return;
+      }
+      const response = await apiClient.post(
+        `/posts/${post.postId}/event/going`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(response.data);
+
+      if (response.data.success) {
+        setIsGoing(true);
+      }
+    } catch (error) {
+      console.error("Failed to mark going:", error);
+    }
+  };
+
+  const renderContent = () => {
+    if (!post.content) return null;
+
+    const content = post.content;
+    const contentLength = 93; // Set a fixed length for content to be displayed initially
+
+    if (expanded) {
+      // If expanded, show full content and "less" button
+      return (
+        <Text style={styles.postContent}>
+          {content}{" "}
+          {content.length > contentLength && (
+            <Text style={styles.moreText} onPress={() => setExpanded(false)}>
+              ...less
+            </Text>
+          )}
+        </Text>
+      );
+    } else {
+      // If not expanded, show partial content and "more" button if content is longer
+      return (
+        <Text style={styles.postContent}>
+          {content.length > contentLength ? (
+            <>
+              {content.slice(0, contentLength)}{" "}
+              <Text style={styles.moreText} onPress={() => setExpanded(true)}>
+                ...more
+              </Text>
+            </>
+          ) : (
+            content
+          )}
+        </Text>
+      );
+    }
   };
 
   const renderImageGrid = () => {
@@ -108,44 +220,6 @@ const PostCard = ({ post, currentUser, onDelete }) => {
     }
   };
 
-  const renderContent = () => {
-    const content = post.content;
-    let contentLength;
-    if (post.content.length > 100) {
-      contentLength = 100;
-    } else if (post.content.length > 50) {
-      contentLength = post.content.length - post.content.length / 3;
-    }
-
-    if (!content) return null;
-
-    if (expanded) {
-      return (
-        <Text style={styles.postContent}>
-          {content}{" "}
-          <Text style={styles.moreText} onPress={() => setExpanded(false)}>
-            ...less
-          </Text>
-        </Text>
-      );
-    } else {
-      return (
-        <Text style={styles.postContent} numberOfLines={2}>
-          {content.length > contentLength ? (
-            <>
-              {content.slice(0, contentLength)}{" "}
-              <Text style={styles.moreText} onPress={() => setExpanded(true)}>
-                ...more
-              </Text>
-            </>
-          ) : (
-            content
-          )}
-        </Text>
-      );
-    }
-  };
-
   const postTime = getTimeAgo(post.postTime);
   return (
     <View>
@@ -194,7 +268,44 @@ const PostCard = ({ post, currentUser, onDelete }) => {
         {/* Post Images */}
         {post.images && post.images.length > 0 && renderImageGrid()}
 
-        {/* Interaction Buttons */}
+        {/* Event Interaction Buttons */}
+        {post.isEvent && (
+          <View style={styles.eventActionsContainer}>
+            <Button
+              mode="contained" // Use 'contained' mode to make the button more distinct
+              compact
+              icon={() => <Icon name="account-heart" size={20} color="#fff" />} // Changed icon and color
+              onPress={handleInterested}
+              disabled={isInterested}
+              style={[
+                styles.interestedButton,
+                isInterested && styles.disabledButton,
+              ]}
+              labelStyle={{ color: "#fff", fontWeight: "bold" }}
+            >
+              {isInterested ? "Interested" : "Mark Interested"}
+            </Button>
+            <Button
+              mode="outlined" // Use 'outlined' mode to make it different
+              compact
+              icon={() => (
+                <Icon name="account-check" size={20} color="#1b8283" />
+              )} // Changed icon and color
+              onPress={handleGoing}
+              disabled={isGoing}
+              style={styles.goingButton}
+              labelStyle={
+                isGoing
+                  ? { color: "#6e6e6e", fontWeight: "bold" }
+                  : { color: "#1b8283", fontWeight: "bold" }
+              }
+            >
+              {isGoing ? "Going" : "Mark Going"}
+            </Button>
+          </View>
+        )}
+
+        {/* Common Interaction Buttons */}
         <View style={styles.actionsContainer}>
           <Button
             mode="text"
@@ -303,6 +414,26 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
+  },
+  eventActionsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  interestedButton: {
+    backgroundColor: "#1b8283", // Darker blue color for differentiation
+    marginRight: 10, // Space between buttons
+    borderRadius: 20,
+    paddingHorizontal: 10,
+  },
+  goingButton: {
+    borderColor: "#1b8283", // Make it outlined
+    borderWidth: 2,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+  },
+  disabledButton: {
+    backgroundColor: "#6e6e6e", // Grey color when button is disabled
   },
   actionsContainer: {
     flexDirection: "row",

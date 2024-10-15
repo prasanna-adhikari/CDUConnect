@@ -29,8 +29,21 @@ const Home = () => {
   const [page, setPage] = useState(1);
   const [totalPosts, setTotalPosts] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const userDetails = await AsyncStorage.getItem("userDetails");
+        if (userDetails) {
+          setCurrentUser(JSON.parse(userDetails));
+        }
+      } catch (error) {
+        console.error("Failed to fetch current user details:", error);
+      }
+    };
+
+    fetchCurrentUser();
     fetchNewsfeedPosts(1);
   }, []);
 
@@ -103,78 +116,94 @@ const Home = () => {
       {/* Navigation Bar */}
       <NavigationBar activePage={activePage} onNavigate={handleNavigate} />
 
-      {/* Posts Section */}
-      {activePage === "Home" && (
+      {/* Ensure `currentUser` is loaded */}
+      {currentUser ? (
         <>
-          {loading ? (
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-            </View>
-          ) : (
+          {activePage === "Home" && (
             <>
-              <CreatePost />
+              {loading ? (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+                </View>
+              ) : (
+                <>
+                  <CreatePost />
 
-              <FlatList
-                data={posts}
-                keyExtractor={(item) => item._id}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    colors={[PRIMARY_COLOR]}
+                  <FlatList
+                    data={posts}
+                    keyExtractor={(item) => item._id}
+                    refreshControl={
+                      <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[PRIMARY_COLOR]}
+                      />
+                    }
+                    renderItem={({ item }) => {
+                      // Determine whether the post is from a user or a club
+                      const author = item.userId || item.clubId || {};
+                      const isUser = !!item.userId;
+
+                      return (
+                        <PostCard
+                          post={{
+                            postId: item._id,
+                            authorId: author._id || "",
+                            authorName:
+                              author.name ||
+                              `${author.firstName || ""} ${
+                                author.lastName || ""
+                              }`.trim(),
+                            authorProfile: author.profileImage
+                              ? getImageUrl(author.profileImage)
+                              : author.clubImage
+                              ? getImageUrl(author.clubImage)
+                              : "",
+                            postTime: item.createdAt,
+                            content: item.content,
+                            images: item.media
+                              ? item.media.map((mediaItem) =>
+                                  getImageUrl(mediaItem)
+                                )
+                              : [],
+                            isUser,
+                            isEvent: item.isEvent,
+                            eventDetails: item.eventDetails,
+                          }}
+                          currentUser={currentUser}
+                        />
+                      );
+                    }}
+                    contentContainerStyle={{ paddingBottom: 30 }}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={
+                      loadingMore ? (
+                        <View style={styles.loaderContainer}>
+                          <ActivityIndicator
+                            size="small"
+                            color={PRIMARY_COLOR}
+                          />
+                        </View>
+                      ) : null
+                    }
                   />
-                }
-                renderItem={({ item }) => {
-                  // Determine whether the post is from a user or a club
-                  const author = item.userId || item.clubId || {};
-                  const isUser = !!item.userId;
-
-                  return (
-                    <PostCard
-                      post={{
-                        authorId: author._id || "",
-                        authorName:
-                          author.name ||
-                          `${author.firstName || ""} ${
-                            author.lastName || ""
-                          }`.trim(),
-                        authorProfile: author.profileImage
-                          ? getImageUrl(author.profileImage)
-                          : null,
-                        postTime: item.createdAt,
-                        content: item.content,
-                        images: item.media
-                          ? item.media.map((mediaItem) =>
-                              getImageUrl(mediaItem)
-                            )
-                          : [],
-                        isUser, // Add an indication if the author is a user or club
-                      }}
-                      currentUser={{ id: author._id || "" }}
-                    />
-                  );
-                }}
-                contentContainerStyle={{ paddingBottom: 30 }}
-                onEndReached={handleLoadMore}
-                onEndReachedThreshold={0.5}
-                ListFooterComponent={
-                  loadingMore ? (
-                    <View style={styles.loaderContainer}>
-                      <ActivityIndicator size="small" color={PRIMARY_COLOR} />
-                    </View>
-                  ) : null
-                }
-              />
+                </>
+              )}
             </>
           )}
-        </>
-      )}
 
-      {/* Other pages */}
-      {activePage === "Friends" && <FriendsScreen />}
-      {activePage === "Clubs" && <ClubList />}
-      {activePage === "Notifications" && <NotificationsScreen />}
-      {activePage === "Menu" && <CustomMenu />}
+          {/* Other pages */}
+          {activePage === "Friends" && <FriendsScreen />}
+          {activePage === "Clubs" && <ClubList />}
+          {activePage === "Notifications" && <NotificationsScreen />}
+          {activePage === "Menu" && <CustomMenu />}
+        </>
+      ) : (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+        </View>
+      )}
     </View>
   );
 };

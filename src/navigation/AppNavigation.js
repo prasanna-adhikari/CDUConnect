@@ -13,6 +13,8 @@ import UserProfile from "../views/UserProfile";
 import ClubDetail from "../views/ClubDetail";
 import PostDetail from "../views/PostDetail";
 import ClubProfile from "../views/ClubProfile";
+import ChatScreen from "../views/ChatScreen";
+import FriendListScreen from "../views/FriendListScreen";
 
 const Stack = createStackNavigator();
 
@@ -37,7 +39,8 @@ const AppNavigation = () => {
         <Stack.Screen name="ClubProfile" component={ClubProfile} />
         <Stack.Screen name="ClubDetail" component={ClubDetail} />
         <Stack.Screen name="PostDetail" component={PostDetail} />
-
+        <Stack.Screen name="FriendListScreen" component={FriendListScreen} />
+        <Stack.Screen name="ChatScreen" component={ChatScreen} />
         <Stack.Screen
           name="ChangePasswordScreen"
           component={ChangePasswordScreen}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -11,9 +11,40 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
+import { getImageUrl } from "../api/utils"; // Assuming you have a utility to generate the full image URL
 
 const CustomMenu = () => {
+  const [userImage, setUserImage] = useState(null); // Store the current user's profile image
+  const [initials, setInitials] = useState(""); // Store user initials
   const navigation = useNavigation();
+
+  useEffect(() => {
+    // Fetch user details from AsyncStorage
+    const fetchUserDetails = async () => {
+      try {
+        const userDetails = await AsyncStorage.getItem("userDetails");
+        if (userDetails) {
+          const parsedUser = JSON.parse(userDetails);
+          const profileImageUrl = getImageUrl(parsedUser.profileImage);
+          setUserImage(profileImageUrl); // Set the user's profile image
+
+          // Extract initials from the user's name
+          if (parsedUser.name) {
+            const nameParts = parsedUser.name.trim().split(" ");
+            if (nameParts.length > 1) {
+              setInitials(`${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase());
+            } else {
+              setInitials(nameParts[0][0].toUpperCase()); // If only one name part, use just the first letter
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -42,10 +73,13 @@ const CustomMenu = () => {
       {/* Profile Button */}
       <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
         <View style={styles.profileCard}>
-          <Avatar.Image
-            size={50}
-            source={{ uri: "https://placekitten.com/200/200" }}
-          />
+          {userImage ? (
+            <Avatar.Image size={50} source={{ uri: userImage }} />
+          ) : (
+            <View style={styles.initialsContainer}>
+              <Text style={styles.initialsText}>{initials}</Text>
+            </View>
+          )}
           <Text style={styles.profileText}>Your Profile</Text>
         </View>
       </TouchableOpacity>
@@ -89,6 +123,7 @@ const CustomMenu = () => {
   );
 };
 
+// StyleSheet for CustomMenu
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -109,6 +144,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#0d2e3f",
+  },
+  initialsContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#1b8283",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  initialsText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
   },
   sectionTitle: {
     fontSize: 18,

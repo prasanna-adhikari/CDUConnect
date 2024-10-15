@@ -56,7 +56,7 @@ const UserProfileCard = ({
             style={styles.actionButton}
             textColor={PRIMARY_COLOR}
           >
-            Remove Friend
+            Remove Connect
           </Button>
         </>
       )}
@@ -68,7 +68,7 @@ const UserProfileCard = ({
             style={styles.actionButton}
             buttonColor={PRIMARY_COLOR}
           >
-            Accept Request
+            Accept Connect Request
           </Button>
           <Button
             mode="outlined"
@@ -76,7 +76,7 @@ const UserProfileCard = ({
             style={styles.actionButton}
             textColor={PRIMARY_COLOR}
           >
-            Reject Request
+            Reject Connect Request
           </Button>
         </>
       )}
@@ -87,7 +87,7 @@ const UserProfileCard = ({
           style={styles.actionButton}
           buttonColor={PRIMARY_COLOR}
         >
-          Cancel Request
+          Cancel Connect Request
         </Button>
       )}
       {relationshipStatus === "not_friend" && (
@@ -97,7 +97,7 @@ const UserProfileCard = ({
           style={styles.actionButton}
           buttonColor={PRIMARY_COLOR}
         >
-          Send Friend Request
+          Send Connect Request
         </Button>
       )}
     </View>

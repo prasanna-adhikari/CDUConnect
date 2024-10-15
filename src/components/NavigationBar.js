@@ -61,6 +61,17 @@ const NavigationBar = ({ activePage, onNavigate }) => {
           color={activePage === "Menu" ? "#1b8283" : "#0d2e3f"}
         />
       </TouchableOpacity>
+
+      {/* <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => onNavigate("Chat", { userId, friendId })}
+      >
+        <Icon
+          name={activePage === "Chat" ? "chat" : "chat-outline"}
+          size={30}
+          color={activePage === "Chat" ? "#1b8283" : "#0d2e3f"}
+        />
+      </TouchableOpacity> */}
     </View>
   );
 };
