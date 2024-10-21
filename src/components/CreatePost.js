@@ -48,7 +48,6 @@ const CreatePost = () => {
         <Avatar.Text size={40} label={initials} style={styles.avatar} />
       )}
 
-      {/* TouchableOpacity to act as a clickable input */}
       <TouchableOpacity
         style={styles.createPostInputContainer}
         onPress={() => navigation.navigate("CreatePostScreen")}

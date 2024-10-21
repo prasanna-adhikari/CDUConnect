@@ -40,7 +40,6 @@ const PostDetail = ({ route }) => {
       {post ? (
         <>
           <Text style={styles.postContent}>{post.content}</Text>
-          {/* Display more post details */}
         </>
       ) : (
         <Text>Post not found.</Text>

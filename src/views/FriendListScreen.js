@@ -7,45 +7,71 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import apiClient from "../api/apiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import apiClient from "../api/apiClient";
 
-const PRIMARY_COLOR = "#1b8283"; // Consistent primary color for the app
+// Constants
+const PRIMARY_COLOR = "#1b8283";
+const IMAGE_PLACEHOLDER = "https://via.placeholder.com/150";
+
+// Helper function to get the correct image URL
+const getImageUrl = (path) => {
+  if (!path) return IMAGE_PLACEHOLDER;
+  const formattedPath = path.replace(/\\/g, "/").replace(/^src\//, "");
+  return `http://192.168.86.68:7000/${formattedPath}`;
+};
 
 const FriendListScreen = () => {
   const [friends, setFriends] = useState([]);
-  const [currentUserId, setCurrentUserId] = useState(null); // Store the current user ID
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const navigation = useNavigation();
 
   useEffect(() => {
-    // Get current user ID from AsyncStorage
-    const getCurrentUser = async () => {
-      const userDetails = await AsyncStorage.getItem("userDetails");
-      const currentUser = JSON.parse(userDetails); // Assuming userDetails is stored as JSON
-      setCurrentUserId(currentUser._id); // Set the current user ID
-    };
-
-    getCurrentUser();
+    fetchCurrentUser();
     fetchFriends();
   }, []);
 
-  const fetchFriends = async () => {
+  // Fetch current user ID from AsyncStorage
+  const fetchCurrentUser = async () => {
     try {
-      const token = await AsyncStorage.getItem("authToken"); // Get the token from AsyncStorage
-      const headers = {
-        Authorization: `Bearer ${token}`, // Add the token to the headers
-      };
-      const response = await apiClient.get("/view-friends", { headers });
-      setFriends(response.data.result); // Set friends in state from "result" array
+      const userDetails = await AsyncStorage.getItem("userDetails");
+      const currentUser = JSON.parse(userDetails);
+      setCurrentUserId(currentUser?._id);
     } catch (error) {
-      console.error("Error fetching friends:", error);
+      console.error("Error fetching current user:", error);
     }
   };
 
+  // Fetch friends list from API
+  const fetchFriends = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      const response = await apiClient.get("/view-friends", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.success) {
+        setFriends(response.data.result || []);
+      } else {
+        Alert.alert("Error", "Failed to fetch friends.");
+      }
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+      Alert.alert("Error", "Failed to load friends list.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Render each friend item
   const renderFriend = ({ item }) => (
     <View style={styles.friendContainer}>
       <Image
@@ -60,9 +86,9 @@ const FriendListScreen = () => {
         style={styles.chatButton}
         onPress={() =>
           navigation.navigate("ChatScreen", {
-            userId: currentUserId, // The current logged-in user's ID
-            friendId: item._id, // The friend's ID
-            friendName: item.name, // Send the friend's name to use in the header
+            userId: currentUserId,
+            friendId: item._id,
+            friendName: item.name,
           })
         }
       >
@@ -70,6 +96,15 @@ const FriendListScreen = () => {
       </TouchableOpacity>
     </View>
   );
+
+  // Display loading spinner
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -89,16 +124,12 @@ const FriendListScreen = () => {
         keyExtractor={(item) => item._id.toString()}
         renderItem={renderFriend}
         contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={
+          <Text style={styles.noFriendsText}>No friends found.</Text>
+        }
       />
     </SafeAreaView>
   );
-};
-
-// Helper function to get the correct image URL
-const getImageUrl = (path) => {
-  if (!path) return null;
-  const formattedPath = path.replace(/\\/g, "/").replace(/^src\//, "");
-  return `http://192.168.86.68:7000/${formattedPath}`;
 };
 
 const styles = StyleSheet.create({
@@ -166,6 +197,17 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 14,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noFriendsText: {
+    textAlign: "center",
+    color: "#888",
+    fontSize: 16,
+    marginTop: 20,
   },
 });
 

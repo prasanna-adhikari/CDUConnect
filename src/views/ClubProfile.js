@@ -61,7 +61,7 @@ const ClubProfile = ({ route, navigation }) => {
         const isUserFollowing = parsedUser.followingClubs.some(
           (club) => club._id === clubId
         );
-        setIsFollowing(isUserFollowing); // Set `isFollowing` based on fetched data
+        setIsFollowing(isUserFollowing);
       }
     } catch (error) {
       console.error("Failed to fetch club details:", error);
@@ -171,8 +171,8 @@ const ClubProfile = ({ route, navigation }) => {
                         getImageUrl(imagePath)
                       ),
                       isUser: false,
-                      isEvent: post.isEvent, // Pass isEvent to PostCard
-                      eventDetails: post.eventDetails, // Pass eventDetails to PostCard
+                      isEvent: post.isEvent,
+                      eventDetails: post.eventDetails,
                     }}
                     currentUser={currentUser}
                   />

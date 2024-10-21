@@ -27,11 +27,10 @@ const PostCard = ({ post, currentUser, onDelete }) => {
 
   useEffect(() => {
     if (post.eventDetails && currentUser) {
-      // Convert IDs to strings to ensure type consistency
+      // Convert IDs to strings
       const interestedIds = post.eventDetails.interested?.map(String);
       const currentUserId = String(currentUser?._id);
 
-      // Use the correct comparison with .some() and ensure consistent types
       const isUserInterested = interestedIds?.some(
         (id) => id === currentUserId
       );
@@ -112,7 +111,6 @@ const PostCard = ({ post, currentUser, onDelete }) => {
     const contentLength = 93; // Set a fixed length for content to be displayed initially
 
     if (expanded) {
-      // If expanded, show full content and "less" button
       return (
         <Text style={styles.postContent}>
           {content}{" "}
@@ -124,7 +122,6 @@ const PostCard = ({ post, currentUser, onDelete }) => {
         </Text>
       );
     } else {
-      // If not expanded, show partial content and "more" button if content is longer
       return (
         <Text style={styles.postContent}>
           {content.length > contentLength ? (
@@ -272,7 +269,7 @@ const PostCard = ({ post, currentUser, onDelete }) => {
         {post.isEvent && (
           <View style={styles.eventActionsContainer}>
             <Button
-              mode="contained" // Use 'contained' mode to make the button more distinct
+              mode="contained"
               compact
               icon={() => <Icon name="account-heart" size={20} color="#fff" />} // Changed icon and color
               onPress={handleInterested}
@@ -290,7 +287,7 @@ const PostCard = ({ post, currentUser, onDelete }) => {
               compact
               icon={() => (
                 <Icon name="account-check" size={20} color="#1b8283" />
-              )} // Changed icon and color
+              )}
               onPress={handleGoing}
               disabled={isGoing}
               style={styles.goingButton}
@@ -421,19 +418,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   interestedButton: {
-    backgroundColor: "#1b8283", // Darker blue color for differentiation
-    marginRight: 10, // Space between buttons
+    backgroundColor: "#1b8283",
+    marginRight: 10,
     borderRadius: 20,
     paddingHorizontal: 10,
   },
   goingButton: {
-    borderColor: "#1b8283", // Make it outlined
+    borderColor: "#1b8283",
     borderWidth: 2,
     borderRadius: 20,
     paddingHorizontal: 10,
   },
   disabledButton: {
-    backgroundColor: "#6e6e6e", // Grey color when button is disabled
+    backgroundColor: "#6e6e6e",
   },
   actionsContainer: {
     flexDirection: "row",

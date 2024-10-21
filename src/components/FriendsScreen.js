@@ -7,10 +7,11 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Avatar, Button } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native"; // Import useNavigation
+import { useNavigation } from "@react-navigation/native";
 import apiClient from "../api/apiClient";
 import { getImageUrl } from "../api/utils";
 import { RefreshControl } from "react-native-gesture-handler";
@@ -24,8 +25,9 @@ const FriendsScreen = () => {
   const [availableUsers, setAvailableUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null); // State for handling loading in actions
 
-  const navigation = useNavigation(); // Set up navigation
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchFriendsData();
@@ -35,28 +37,23 @@ const FriendsScreen = () => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem("authToken");
-
       if (!token) {
-        console.error("No authentication token found.");
+        Alert.alert("Error", "No authentication token found.");
         return;
       }
 
       // Fetch available users
       const usersResponse = await apiClient.get("/view-available-user", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (usersResponse.data.success) {
-        setAvailableUsers(usersResponse.data.result || []); // Use empty array if no users found
+        setAvailableUsers(usersResponse.data.result || []);
       }
 
       // Fetch incoming and outgoing friend requests
       const requestsResponse = await apiClient.get("/friend-requests", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (requestsResponse.data.success) {
@@ -69,147 +66,86 @@ const FriendsScreen = () => {
       }
     } catch (error) {
       console.error("Failed to load friends data:", error);
+      Alert.alert("Error", "Failed to load friends data.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // Accept friend request
-  const handleAcceptRequest = async (requestId) => {
+  const handleAction = async (action, requestId, recipientId) => {
+    setActionLoading(requestId || recipientId);
     try {
       const token = await AsyncStorage.getItem("authToken");
+      let endpoint, method;
 
-      const response = await apiClient.post(
-        `/friend-request/${requestId}/accept`,
+      switch (action) {
+        case "accept":
+          endpoint = `/friend-request/${requestId}/accept`;
+          method = "post";
+          break;
+        case "reject":
+          endpoint = `/friend-request/${requestId}/reject`;
+          method = "post";
+          break;
+        case "send":
+          endpoint = `/friend-request/${recipientId}`;
+          method = "post";
+          break;
+        case "cancel":
+          endpoint = `/friend-request/cancel/${recipientId}`;
+          method = "delete";
+          break;
+        default:
+          return;
+      }
+
+      const response = await apiClient[method](
+        endpoint,
         {},
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       if (response.data.success) {
-        setIncomingRequests((prev) =>
-          prev.filter((request) => request._id !== requestId)
-        );
+        updateListsAfterAction(action, requestId, recipientId);
+      } else {
+        Alert.alert("Error", `Failed to ${action} friend request.`);
       }
     } catch (error) {
-      console.error("Failed to accept friend request:", error);
+      console.error(`Failed to ${action} friend request:`, error);
+      Alert.alert("Error", `Failed to ${action} friend request.`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  // Reject friend request
-  const handleRejectRequest = async (requestId) => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-
-      const response = await apiClient.post(
-        `/friend-request/${requestId}/reject`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+  const updateListsAfterAction = (action, requestId, recipientId) => {
+    if (action === "accept" || action === "reject") {
+      setIncomingRequests((prev) =>
+        prev.filter((request) => request._id !== requestId)
       );
-
-      if (response.data.success) {
-        setIncomingRequests((prev) =>
-          prev.filter((request) => request._id !== requestId)
-        );
-      }
-    } catch (error) {
-      console.error("Failed to reject friend request:", error);
-    }
-  };
-
-  // Send friend request
-  const handleSendFriendRequest = async (recipientId) => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-
-      const response = await apiClient.post(
-        `/friend-request/${recipientId}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+    } else if (action === "send") {
+      const user = availableUsers.find((u) => u._id === recipientId);
+      setOutgoingRequests((prev) => [
+        ...prev,
+        { recipient: user, status: "pending" },
+      ]);
+      setAvailableUsers((prev) => prev.filter((u) => u._id !== recipientId));
+    } else if (action === "cancel") {
+      const canceledUser = outgoingRequests.find(
+        (req) => req.recipient._id === recipientId
       );
-
-      if (response.data.success) {
-        // Find the user in the availableUsers list to get their profile image and email
-        const user = availableUsers.find((u) => u._id === recipientId);
-
-        setOutgoingRequests((prev) => [
-          ...prev,
-          {
-            recipient: {
-              _id: recipientId,
-              name: user?.name,
-              profileImage: user?.profileImage,
-              email: user?.email, // Add the email to avoid "Unknown"
-            },
-            status: "pending",
-          },
-        ]);
-
-        // Remove from available users list
-        setAvailableUsers((prev) =>
-          prev.filter((user) => user._id !== recipientId)
-        );
-      }
-    } catch (error) {
-      console.error("Failed to send friend request:", error);
-    }
-  };
-
-  // Cancel friend request
-  const handleCancelRequest = async (recipientId) => {
-    try {
-      const token = await AsyncStorage.getItem("authToken");
-
-      const response = await apiClient.delete(
-        `/friend-request/cancel/${recipientId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      setOutgoingRequests((prev) =>
+        prev.filter((req) => req.recipient._id !== recipientId)
       );
-
-      if (response.data.success) {
-        // Find the canceled request's user in outgoingRequests
-        const canceledUser = outgoingRequests.find(
-          (request) => request.recipient._id === recipientId
-        );
-
-        // Remove the request from outgoingRequests
-        setOutgoingRequests((prev) =>
-          prev.filter((request) => request.recipient._id !== recipientId)
-        );
-
-        // Add the user back to availableUsers
-        if (canceledUser) {
-          setAvailableUsers((prev) => [
-            ...prev,
-            {
-              _id: canceledUser.recipient._id,
-              name: canceledUser.recipient.name,
-              profileImage: canceledUser.recipient.profileImage,
-            },
-          ]);
-        }
+      if (canceledUser) {
+        setAvailableUsers((prev) => [...prev, canceledUser.recipient]);
       }
-    } catch (error) {
-      console.error("Failed to cancel friend request:", error);
     }
   };
 
-  // Refresh handler for pull-to-refresh
   const onRefresh = () => {
     setRefreshing(true);
     fetchFriendsData();
@@ -231,173 +167,149 @@ const FriendsScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Friend Requests Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Connection Requests</Text>
-          {incomingRequests.length > 0 ? (
-            incomingRequests.map((request) =>
-              request?.requester ? (
-                <TouchableOpacity
-                  key={request._id}
-                  onPress={() =>
-                    navigation.navigate("UserProfile", {
-                      userId: request.requester._id,
-                    })
-                  } // Navigate to UserProfile with userId
-                >
-                  <View style={styles.friendContainer}>
-                    <Avatar.Image
-                      size={50}
-                      source={{
-                        uri: request.requester.profileImage
-                          ? getImageUrl(request.requester.profileImage)
-                          : "https://via.placeholder.com/150",
-                      }}
-                      style={styles.avatar}
-                    />
-                    <View style={styles.userInfo}>
-                      <Text style={styles.userName}>
-                        {request.requester.name || "Unknown"}
-                      </Text>
-                      <Text>{request.requester.email || "Unknown"}</Text>
-                      <View style={styles.buttonGroup}>
-                        <Button
-                          mode="contained"
-                          onPress={() => handleAcceptRequest(request._id)}
-                          style={styles.acceptButton}
-                        >
-                          Accept
-                        </Button>
-                        <Button
-                          mode="outlined"
-                          onPress={() => handleRejectRequest(request._id)}
-                          style={styles.rejectButton}
-                          textColor={PRIMARY_COLOR}
-                        >
-                          Reject
-                        </Button>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ) : null
-            )
-          ) : (
-            <Text style={styles.noRequestsText}>No connection requests</Text>
-          )}
-        </View>
-
-        {/* Outgoing Connection Requests Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Outgoing Connection Requests</Text>
-          {outgoingRequests.length > 0 ? (
-            outgoingRequests.map((request) =>
-              request?.recipient ? (
-                <TouchableOpacity
-                  key={request._id}
-                  onPress={() =>
-                    navigation.navigate("UserProfile", {
-                      userId: request.recipient._id,
-                    })
-                  } // Navigate to UserProfile with userId
-                >
-                  <View style={styles.friendContainer}>
-                    <Avatar.Image
-                      size={50}
-                      source={{
-                        uri: request.recipient.profileImage
-                          ? getImageUrl(request.recipient.profileImage)
-                          : "https://via.placeholder.com/150",
-                      }}
-                      style={styles.avatar}
-                    />
-                    <View style={styles.userInfo}>
-                      <Text style={styles.userName}>
-                        {request.recipient.name || "Unknown"}
-                      </Text>
-                      <Text>{request.recipient.email || "Unknown"}</Text>
-
-                      <View style={styles.buttonGroup}>
-                        <Text style={styles.pendingText}>Pending</Text>
-                        <Button
-                          mode="outlined"
-                          onPress={() =>
-                            handleCancelRequest(request.recipient._id)
-                          }
-                          style={styles.cancelButton}
-                          textColor={PRIMARY_COLOR}
-                        >
-                          Cancel
-                        </Button>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ) : null
-            )
-          ) : (
-            <Text style={styles.noRequestsText}>No outgoing requests</Text>
-          )}
-        </View>
-
-        {/* Available Users Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Available Users</Text>
-          {availableUsers.length > 0 ? (
-            availableUsers.map((user) => (
-              <TouchableOpacity
-                key={user._id}
-                onPress={() =>
-                  navigation.navigate("UserProfile", { userId: user._id })
-                } // Navigate to UserProfile with userId
-              >
-                <View style={styles.friendContainer}>
-                  <Avatar.Image
-                    size={60}
-                    source={{
-                      uri: user.profileImage
-                        ? getImageUrl(user.profileImage)
-                        : "https://via.placeholder.com/150",
-                    }}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.userInfo}>
-                    <Text style={styles.userName}>
-                      {user.name || "Unknown"}
-                    </Text>
-                    <Text>{user.email || "Unknown"}</Text>
-
-                    <Button
-                      mode="contained"
-                      onPress={() => handleSendFriendRequest(user._id)}
-                      style={styles.addButton}
-                    >
-                      Connect
-                    </Button>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={styles.noRequestsText}>No users found</Text>
-          )}
-        </View>
+        <FriendRequests
+          title="Connection Requests"
+          requests={incomingRequests}
+          handleAction={handleAction}
+          actionLoading={actionLoading}
+          navigation={navigation}
+        />
+        <FriendRequests
+          title="Outgoing Connection Requests"
+          requests={outgoingRequests}
+          handleAction={handleAction}
+          actionLoading={actionLoading}
+          outgoing
+          navigation={navigation}
+        />
+        <AvailableUsers
+          users={availableUsers}
+          handleAction={handleAction}
+          actionLoading={actionLoading}
+          navigation={navigation}
+        />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+const FriendRequests = ({
+  title,
+  requests,
+  handleAction,
+  actionLoading,
+  outgoing,
+  navigation,
+}) => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    {requests.length > 0 ? (
+      requests.map((request) => (
+        <TouchableOpacity
+          key={request._id}
+          onPress={() =>
+            navigation.navigate("UserProfile", {
+              userId: request.requester?._id,
+            })
+          }
+        >
+          <View style={styles.friendContainer}>
+            <Avatar.Image
+              size={50}
+              source={{ uri: getImageUrl(request.requester?.profileImage) }}
+              style={styles.avatar}
+            />
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>
+                {request.requester?.name || "Unknown"}
+              </Text>
+              <Text>{request.requester?.email || "Unknown"}</Text>
+              {outgoing ? (
+                <View style={styles.buttonGroup}>
+                  <Text style={styles.pendingText}>Pending</Text>
+                  <Button
+                    mode="outlined"
+                    onPress={() =>
+                      handleAction("cancel", null, request.recipient._id)
+                    }
+                    style={styles.cancelButton}
+                    disabled={actionLoading === request.recipient._id}
+                  >
+                    Cancel
+                  </Button>
+                </View>
+              ) : (
+                <View style={styles.buttonGroup}>
+                  <Button
+                    mode="contained"
+                    onPress={() => handleAction("accept", request._id)}
+                    style={styles.acceptButton}
+                    disabled={actionLoading === request._id}
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    mode="outlined"
+                    onPress={() => handleAction("reject", request._id)}
+                    style={styles.rejectButton}
+                    disabled={actionLoading === request._id}
+                  >
+                    Reject
+                  </Button>
+                </View>
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+      ))
+    ) : (
+      <Text style={styles.noRequestsText}>No {title.toLowerCase()}</Text>
+    )}
+  </View>
+);
+
+const AvailableUsers = ({ users, handleAction, actionLoading, navigation }) => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>Available Users</Text>
+    {users.length > 0 ? (
+      users.map((user) => (
+        <TouchableOpacity
+          key={user._id}
+          onPress={() =>
+            navigation.navigate("UserProfile", { userId: user._id })
+          }
+        >
+          <View style={styles.friendContainer}>
+            <Avatar.Image
+              size={50}
+              source={{ uri: getImageUrl(user.profileImage) }}
+              style={styles.avatar}
+            />
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{user.name || "Unknown"}</Text>
+              <Text>{user.email || "Unknown"}</Text>
+              <Button
+                mode="contained"
+                onPress={() => handleAction("send", null, user._id)}
+                style={styles.addButton}
+                disabled={actionLoading === user._id}
+              >
+                Connect
+              </Button>
+            </View>
+          </View>
+        </TouchableOpacity>
+      ))
+    ) : (
+      <Text style={styles.noRequestsText}>No users found</Text>
+    )}
+  </View>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  scrollContainer: {
-    padding: 20,
-  },
-  section: {
-    marginBottom: 30,
-  },
+  container: { flex: 1, backgroundColor: "#f8f9fa" },
+  scrollContainer: { padding: 20 },
+  section: { marginBottom: 30 },
   sectionTitle: {
     fontSize: 22,
     fontWeight: "700",
@@ -413,22 +325,10 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 2,
   },
-  avatar: {
-    backgroundColor: SECONDARY_COLOR,
-  },
-  userInfo: {
-    marginLeft: 15,
-    flex: 1,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-  },
-  buttonGroup: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
+  avatar: { backgroundColor: SECONDARY_COLOR },
+  userInfo: { marginLeft: 15, flex: 1 },
+  userName: { fontSize: 18, fontWeight: "600", color: "#333" },
+  buttonGroup: { flexDirection: "row", marginTop: 10 },
   acceptButton: {
     backgroundColor: PRIMARY_COLOR,
     marginRight: 10,
@@ -450,23 +350,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 10,
   },
-  pendingText: {
-    color: "#888",
-    fontSize: 16,
-    fontWeight: "500",
-    marginTop: 5,
-  },
+  pendingText: { color: "#888", fontSize: 16, fontWeight: "500", marginTop: 5 },
   noRequestsText: {
     color: "#888",
     fontSize: 16,
     textAlign: "center",
     paddingVertical: 10,
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
 
 export default FriendsScreen;

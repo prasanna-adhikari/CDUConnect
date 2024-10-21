@@ -1,9 +1,15 @@
+import Config from "react-native-config";
+
+// Function to get the image URL
 export const getImageUrl = (path) => {
   if (!path) return null;
-  const url = "192.168.86.68";
+
+  // Fetch the base URL from the environment variables or use a default
+  const baseUrl = Config.IMAGE_URL || "http://192.168.86.68:7000";
+
   // Replace backslashes with forward slashes and remove 'src/' from the path
   const formattedPath = path.replace(/\\/g, "/").replace(/^src\//, "");
 
-  return `http://192.168.86.68:7000/${formattedPath}`;
-  // return `http://192.168.86.59:7000/${formattedPath}`;
+  // Construct and return the complete image URL
+  return `${baseUrl}/${formattedPath}`;
 };

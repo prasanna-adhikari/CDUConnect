@@ -3,7 +3,7 @@ import { View, Image, StyleSheet, Dimensions } from "react-native";
 import { TextInput, Button, Text } from "react-native-paper";
 import { Formik } from "formik";
 import * as Yup from "yup";
-import apiClient from "../api/apiClient"; // Import apiClient instance
+import apiClient from "../api/apiClient";
 import Toast from "react-native-toast-message";
 
 const { width, height } = Dimensions.get("window");
@@ -74,7 +74,6 @@ const Register = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.curvedBackground}></View>
 
-      {/* Logo at the top */}
       <View style={styles.logoContainer}>
         <View style={styles.logoBackground}>
           <Image

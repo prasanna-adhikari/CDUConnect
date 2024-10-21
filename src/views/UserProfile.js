@@ -186,7 +186,7 @@ const UserProfile = ({ route, navigation }) => {
               onRemoveFriend={() => handleAction("remove")}
               onMessage={() =>
                 navigation.navigate("ChatScreen", {
-                  userId: user._id, // You can pass the userId to the chat screen
+                  userId: user._id,
                   friendId: user._id,
                   friendName: user.name,
                 })

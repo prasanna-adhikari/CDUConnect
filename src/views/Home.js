@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   FlatList,
-  SafeAreaView,
   RefreshControl,
 } from "react-native";
 import Header from "../components/Header";
@@ -32,51 +31,45 @@ const Home = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const userDetails = await AsyncStorage.getItem("userDetails");
-        if (userDetails) {
-          setCurrentUser(JSON.parse(userDetails));
-        }
-      } catch (error) {
-        console.error("Failed to fetch current user details:", error);
-      }
-    };
-
-    fetchCurrentUser();
-    fetchNewsfeedPosts(1);
+    initializeHomePage();
   }, []);
 
-  const fetchNewsfeedPosts = async (pageNumber = 1) => {
-    if (pageNumber > 1) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
+  // Initialize home page
+  const initializeHomePage = async () => {
+    await fetchCurrentUser();
+    await fetchNewsfeedPosts(1);
+  };
+
+  // Fetch current user data from AsyncStorage
+  const fetchCurrentUser = async () => {
+    try {
+      const userDetails = await AsyncStorage.getItem("userDetails");
+      if (userDetails) {
+        setCurrentUser(JSON.parse(userDetails));
+      }
+    } catch (error) {
+      console.error("Failed to fetch current user details:", error);
     }
+  };
+
+  // Fetch newsfeed posts from API
+  const fetchNewsfeedPosts = async (pageNumber = 1) => {
+    setLoading(pageNumber === 1);
+    setLoadingMore(pageNumber > 1);
 
     try {
       const token = await AsyncStorage.getItem("authToken");
-      if (!token) {
-        console.error("No authentication token found.");
-        return;
-      }
+      if (!token) return console.error("No authentication token found.");
 
       const response = await apiClient.get(
         `/newsfeed?page=${pageNumber}&limit=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
         setTotalPosts(response.data.total);
-        if (pageNumber === 1) {
-          setPosts(response.data.posts);
-        } else {
-          setPosts((prevPosts) => [...prevPosts, ...response.data.posts]);
-        }
+        const newPosts = response.data.posts || [];
+        setPosts(pageNumber === 1 ? newPosts : [...posts, ...newPosts]);
         setPage(pageNumber);
       }
     } catch (error) {
@@ -87,25 +80,53 @@ const Home = () => {
     }
   };
 
+  // Handle loading more posts when scrolling
   const handleLoadMore = () => {
     if (!loadingMore && posts.length < totalPosts) {
       fetchNewsfeedPosts(page + 1);
     }
   };
 
+  // Handle pull-to-refresh
   const onRefresh = async () => {
     setRefreshing(true);
-    try {
-      await fetchNewsfeedPosts(1);
-    } catch (error) {
-      console.error("Failed to refresh posts:", error);
-    } finally {
-      setRefreshing(false);
-    }
+    await fetchNewsfeedPosts(1);
+    setRefreshing(false);
   };
 
+  // Handle page navigation
   const handleNavigate = (page) => {
     setActivePage(page);
+  };
+
+  // Render each post item
+  const renderPost = ({ item }) => {
+    const author = item.userId || item.clubId || {};
+    const isUser = !!item.userId;
+
+    return (
+      <PostCard
+        post={{
+          postId: item._id,
+          authorId: author._id || "",
+          authorName:
+            author.name ||
+            `${author.firstName || ""} ${author.lastName || ""}`.trim(),
+          authorProfile: getImageUrl(
+            author.profileImage || author.clubImage || ""
+          ),
+          postTime: item.createdAt,
+          content: item.content,
+          images: item.media
+            ? item.media.map((mediaItem) => getImageUrl(mediaItem))
+            : [],
+          isUser,
+          isEvent: item.isEvent,
+          eventDetails: item.eventDetails,
+        }}
+        currentUser={currentUser}
+      />
+    );
   };
 
   return (
@@ -116,22 +137,24 @@ const Home = () => {
       {/* Navigation Bar */}
       <NavigationBar activePage={activePage} onNavigate={handleNavigate} />
 
-      {/* Ensure `currentUser` is loaded */}
       {currentUser ? (
         <>
+          {/* Home Page */}
           {activePage === "Home" && (
-            <>
+            <View style={styles.postsContainer}>
               {loading ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-                </View>
+                <ActivityIndicator
+                  size="large"
+                  color={PRIMARY_COLOR}
+                  style={styles.loader}
+                />
               ) : (
                 <>
                   <CreatePost />
-
                   <FlatList
                     data={posts}
                     keyExtractor={(item) => item._id}
+                    renderItem={renderPost}
                     refreshControl={
                       <RefreshControl
                         refreshing={refreshing}
@@ -139,70 +162,41 @@ const Home = () => {
                         colors={[PRIMARY_COLOR]}
                       />
                     }
-                    renderItem={({ item }) => {
-                      // Determine whether the post is from a user or a club
-                      const author = item.userId || item.clubId || {};
-                      const isUser = !!item.userId;
-
-                      return (
-                        <PostCard
-                          post={{
-                            postId: item._id,
-                            authorId: author._id || "",
-                            authorName:
-                              author.name ||
-                              `${author.firstName || ""} ${
-                                author.lastName || ""
-                              }`.trim(),
-                            authorProfile: author.profileImage
-                              ? getImageUrl(author.profileImage)
-                              : author.clubImage
-                              ? getImageUrl(author.clubImage)
-                              : "",
-                            postTime: item.createdAt,
-                            content: item.content,
-                            images: item.media
-                              ? item.media.map((mediaItem) =>
-                                  getImageUrl(mediaItem)
-                                )
-                              : [],
-                            isUser,
-                            isEvent: item.isEvent,
-                            eventDetails: item.eventDetails,
-                          }}
-                          currentUser={currentUser}
-                        />
-                      );
-                    }}
-                    contentContainerStyle={{ paddingBottom: 30 }}
+                    contentContainerStyle={styles.listContent}
                     onEndReached={handleLoadMore}
                     onEndReachedThreshold={0.5}
                     ListFooterComponent={
                       loadingMore ? (
-                        <View style={styles.loaderContainer}>
-                          <ActivityIndicator
-                            size="small"
-                            color={PRIMARY_COLOR}
-                          />
-                        </View>
+                        <ActivityIndicator
+                          size="small"
+                          color={PRIMARY_COLOR}
+                          style={styles.loader}
+                        />
                       ) : null
+                    }
+                    ListEmptyComponent={
+                      <View style={styles.emptyContainer}>
+                        <Text>No posts available.</Text>
+                      </View>
                     }
                   />
                 </>
               )}
-            </>
+            </View>
           )}
 
-          {/* Other pages */}
+          {/* Other Pages */}
           {activePage === "Friends" && <FriendsScreen />}
           {activePage === "Clubs" && <ClubList />}
           {activePage === "Notifications" && <NotificationsScreen />}
           {activePage === "Menu" && <CustomMenu />}
         </>
       ) : (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-        </View>
+        <ActivityIndicator
+          size="large"
+          color={PRIMARY_COLOR}
+          style={styles.loader}
+        />
       )}
     </View>
   );
@@ -214,12 +208,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f4f7",
   },
   postsContainer: {
-    paddingHorizontal: 10,
+    flex: 1,
   },
-  loaderContainer: {
+  listContent: {
+    paddingBottom: 30,
+  },
+  loader: {
+    marginTop: 20,
+  },
+  emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 50,
   },
 });
 

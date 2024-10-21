@@ -47,7 +47,6 @@ const ClubDetail = ({ route }) => {
         <>
           <Text style={styles.clubName}>{club.name}</Text>
           <Text style={styles.clubDescription}>{club.description}</Text>
-          {/* Display more club details or posts */}
         </>
       ) : (
         <Text>Club not found.</Text>

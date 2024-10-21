@@ -1,4 +1,3 @@
-// PostMenu.js
 import React, { useState } from "react";
 import { Menu, IconButton } from "react-native-paper";
 import { View } from "react-native";

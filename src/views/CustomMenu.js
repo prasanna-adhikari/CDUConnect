@@ -11,7 +11,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
-import { getImageUrl } from "../api/utils"; // Assuming you have a utility to generate the full image URL
+import { getImageUrl } from "../api/utils";
 
 const CustomMenu = () => {
   const [userImage, setUserImage] = useState(null); // Store the current user's profile image

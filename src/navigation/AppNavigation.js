@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import Login from "../views/Login";
 import Register from "../views/Register";
-import Home from "../views/Home"; // Import Home screen
+import Home from "../views/Home";
 import { useTheme } from "react-native-paper";
 import Profile from "../views/Profile";
 import CreatePostScreen from "../views/CreatePostScreen";
@@ -19,14 +19,14 @@ import FriendListScreen from "../views/FriendListScreen";
 const Stack = createStackNavigator();
 
 const AppNavigation = () => {
-  const theme = useTheme(); // Use theme for consistent styling
+  const theme = useTheme();
 
   return (
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Login"
         screenOptions={{
-          headerShown: false, // Hide the header
+          headerShown: false,
         }}
       >
         <Stack.Screen name="Login" component={Login} />
